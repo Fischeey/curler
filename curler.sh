@@ -13,10 +13,11 @@ TITLE=0
 UNIQUE=0
 
 touch out.txt
-echo "" > out.txt
+: > out.txt
 touch TEMP_URLS.txt
-echo "" > TEMP_URLS.txt
-
+: > TEMP_URLS.txt
+touch UNIQUE_TEMP.txt
+: > UNIQUE_TEMP.txt
 
 
 if [ "$#" -eq 1 ]; then 
@@ -116,12 +117,13 @@ if [[ "$DICTIONARY" -gt 0 ]]; then
             echo "On Debian/Ubuntu, install it using: sudo apt install wamerican"
             exit 1
         fi
-        echo "url = $URL" > TEMP_URLS.txt
         if [[ "$PARALLEL" = 0 ]]; then
+            echo "url = $URL" >> TEMP_URLS.txt
             while IFS= read -r LINE; do
                 echo "url = $URL/$LINE" >> TEMP_URLS.txt
             done < "$DICTIONARY_VAL"
         else
+            echo "$URL" >> TEMP_URLS.txt
             while IFS= read -r LINE; do
                 echo "$URL/$LINE" >> TEMP_URLS.txt
             done < "$DICTIONARY_VAL"
@@ -145,12 +147,13 @@ if [[ "$PARALLEL" -gt 0 ]]; then
     PARALLEL_VAL=${!TEMP}
 
     curler_T(){
-         if curl -s  "${1}" | grep -iPo '(?<=<title>).*?(?=</title>)'; then
+         if curl --max-filesize 50000 -s  "${1}" | grep -iPo '(?<=<title>).*?(?=</title>)'; then
             echo "${1}" >> out.txt
         fi
     }
-    curler_U(){
-        curl -s  "${1}" | sed -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' >> UNIQUE_TEMP.txt
+    curler_U()
+    {
+        printf "%s>%s\n" "$1" "$(curl --max-filesize 5000 -s  "${1}"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g'  -e 's/[[:space:]]//g' | tr -d '\n\r')">> UNIQUE_TEMP.txt
     }
     export -f curler_T
     export -f curler_U
@@ -174,7 +177,7 @@ else
     echo "run non parallel by title"
         while IFS='=' read -r _ url; do
             url=$(echo "$url" | xargs)    # trim whitespace
-            title=$(curl -Ls "$url" | grep -oP '(?<=<title>).*?(?=</title>)')
+            title=$(curl --max-filesize 500000 -Ls "$url" | grep -oP '(?<=<title>).*?(?=</title>)')
             echo '%s\t%s\n' "$url" "$title" >> out.txt
         done < TEMP_URLS.txt
     elif [[ "$UNIQUE" -eq 1 ]]; then
@@ -188,17 +191,91 @@ fi
 echo "run unique analysis"
 
 if [[ "$UNIQUE" -eq 1 ]]; then
-TESTSTR1=$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)
-TESTSTR2=$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)
-TESTSTR3=$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)
-TESTSTR4=$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)
-echo "$TESTSTR1"
-echo "$TESTSTR2"
-echo "$TESTSTR3"
-echo "$TESTSTR4"
+#-e 's/<style>.*<\/style>//g'
+    TESTURL1=$(curl --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' -e 's/[[:space:]]//g' | tr -d '\n\r')
+    TESTURL2=$(curl --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' -e 's/[[:space:]]//g' | tr -d '\n\r')
+    TESTURL3=$(curl --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' -e 's/[[:space:]]//g' | tr -d '\n\r')
+
+    if [ "${#TESTURL1}" -le "${#TESTURL2}" ] && [ "${#TESTURL1}" -le "${#TESTURL3}" ]; then
+        smallest=$TESTURL1
+    elif [ "${#TESTURL2}" -le "${#TESTURL1}" ] && [ "${#TESTURL2}" -le "${#TESTURL3}" ]; then
+        smallest=$TESTURL2
+    else
+        smallest=$TESTURL3
+    fi
+
+    TESTURL1AVE=0
+    TESTURL2AVE=0
+    TESTURL3AVE=0
+    echo $TESTURL1
+    echo $TESTURL2
+    echo $TESTURL3
+    for (( i=0; i<${#smallest}; i++ )); do
+        URL1char="${TESTURL1:$i:1}"
+        URL2char="${TESTURL2:$i:1}"
+        URL3char="${TESTURL3:$i:1}"
+
+        if [[ "$URL1char" = "$URL2char" ]] && [[ "$URL2char" = "$URL3char" ]]; then
+        
+            ((TESTURL1AVE++))
+            ((TESTURL2AVE++))
+            ((TESTURL3AVE++))
+        elif [[ "$URL1char" = "$URL2char" ]] ; then
+            ((TESTURL1AVE++))
+            ((TESTURL2AVE++))
+        elif [[ "$URL1char" = "$URL2char" ]] ; then
+            ((TESTURL2AVE++))
+            ((TESTURL3AVE++))
+        fi
+    done
+    ((TESTURL1AVE /= "${#smallest}"))
+    ((TESTURL2AVE /= "${#smallest}"))
+    ((TESTURL3AVE /= "${#smallest}"))
+
+    if awk "BEGIN {exit !($TESTURL1AVE > $TESTURL2AVE && $TESTURL1AVE > $TESTURL3AVE)}"; then
+        greatest=$TESTURL1
+    elif awk "BEGIN {exit !($TESTURL2AVE > $TESTURL1AVE && $TESTURL2AVE > $TESTURL3AVE)}"; then
+        greatest=$TESTURL2
+    else
+        greatest=$TESTURL3
+    fi
+
+
+    while IFS= read -r DATALINE; do
+        #echo "${DATALINE0:20}"
+        TITLESTR="${DATALINE%%>*}"
+        DATALINE="${DATALINE#*>}"
+        #echo $DATALINE
+        DATAAVE=0
+        for (( i=0; i<${#smallest}; i++ )); do
+            KEYCHAR="${greatest:$i:1}"
+            TESTCHAR="${DATALINE:$i:1}"
+            #echo "$KEYCHAR ::: $TESTCHAR"
+            if [[ "$TESTCHAR" != "$KEYCHAR" ]]; then
+                ((DATAAVE++))
+            fi
+
+        done
+        LENGTH="${#smallest}"
+        #echo $LENGTH
+        #echo $DATAAVE
+        if [ "$LENGTH" -gt 0 ]; then
+            DATAAVE=$(awk -v sum="$DATAAVE" -v len="$LENGTH" \
+                'BEGIN { printf "%.2f\n", sum / len }')
+        else
+            echo "LENGTH is zero"
+        fi
+        if awk "BEGIN {exit !($DATAAVE > 0.5)}"; then
+            echo "$TITLESTR : UNIQUE VALUE : $DATAAVE" >> out.txt
+        fi
+    done < UNIQUE_TEMP.txt
 fi
 
 
-rm -rf TEMP_URLS.txt
+
+
+
+
+#rm -rf TEMP_URLS.txt
 echo "end of program"
 exit 0
