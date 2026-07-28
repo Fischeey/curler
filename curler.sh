@@ -153,7 +153,7 @@ if [[ "$PARALLEL" -gt 0 ]]; then
     }
     curler_U()
     {
-        printf "%s>%s\n" "$1" "$(curl --max-filesize 5000 -s  "${1}"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g'  -e 's/[[:space:]]//g' | tr -d '\n\r')">> UNIQUE_TEMP.txt
+        printf "%s>%s\n" "$1" "$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s  "${1}"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g'  -e 's/[[:space:]]//g' | tr -d '\n\r')">> UNIQUE_TEMP.txt
     }
     export -f curler_T
     export -f curler_U
@@ -175,9 +175,9 @@ if [[ "$PARALLEL" -gt 0 ]]; then
 else
     if [[ "$TITLE" -eq 1 ]]; then
     echo "run non parallel by title"
-        while IFS='=' read -r _ url; do
+        while IFS='=' read -r _ url; do 
             url=$(echo "$url" | xargs)    # trim whitespace
-            title=$(curl --max-filesize 500000 -Ls "$url" | grep -oP '(?<=<title>).*?(?=</title>)')
+            title=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 500000 -Ls "$url" | grep -oP '(?<=<title>).*?(?=</title>)')
             echo '%s\t%s\n' "$url" "$title" >> out.txt
         done < TEMP_URLS.txt
     elif [[ "$UNIQUE" -eq 1 ]]; then
@@ -192,9 +192,9 @@ echo "run unique analysis"
 
 if [[ "$UNIQUE" -eq 1 ]]; then
 #-e 's/<style>.*<\/style>//g'
-    TESTURL1=$(curl --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' -e 's/[[:space:]]//g' | tr -d '\n\r')
-    TESTURL2=$(curl --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' -e 's/[[:space:]]//g' | tr -d '\n\r')
-    TESTURL3=$(curl --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' -e 's/[[:space:]]//g' | tr -d '\n\r')
+    TESTURL1=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' -e 's/[[:space:]]//g' | tr -d '\n\r')
+    TESTURL2=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' -e 's/[[:space:]]//g' | tr -d '\n\r')
+    TESTURL3=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' -e 's/[[:space:]]//g' | tr -d '\n\r')
 
     if [ "${#TESTURL1}" -le "${#TESTURL2}" ] && [ "${#TESTURL1}" -le "${#TESTURL3}" ]; then
         smallest=$TESTURL1
@@ -265,9 +265,9 @@ if [[ "$UNIQUE" -eq 1 ]]; then
         else
             echo "LENGTH is zero"
         fi
-        if awk "BEGIN {exit !($DATAAVE > 0.5)}"; then
+        #if awk "BEGIN {exit !($DATAAVE > 0.5)}"; then
             echo "$TITLESTR : UNIQUE VALUE : $DATAAVE" >> out.txt
-        fi
+        #fi
     done < UNIQUE_TEMP.txt
 fi
 
