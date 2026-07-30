@@ -84,8 +84,19 @@ for arg in "$@"; do
         echo "ERROR - can only enter one analysis mode"
         exit 1
     fi
+
+    elif [[ "$arg" == "-S" ]]; then 
+        echo "entering SUFFIX mode"
+        TITLE=1
     ((COUNTER++))
 done 
+
+#
+# need to implement proper url entered
+#need to implement suffix mode
+# need to implement proper display menu with checks and X's 
+#need to implement timer 
+
 
 
 
@@ -174,13 +185,10 @@ export -f curler_B
 export -f curler_W
 
 if [[ "$TITLE" -eq 1 ]]; then
-    echo "run parallel Title"
     cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_T "$1" ' _   "{}"
 elif [[ "$BODY" -eq 1 ]]; then
-    echo "run parallel BODY"
     cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_B "$1" ' _   "{}"
 elif [[ "$WORD" -eq 1 ]]; then
-    echo "run parallel WORD"
     cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_W "$1" ' _   "{}"
 else
     echo "ERROR 111"
@@ -221,9 +229,7 @@ fi
 TESTURL1AVE=0
 TESTURL2AVE=0
 TESTURL3AVE=0
-echo $TESTURL1
-echo $TESTURL2
-echo $TESTURL3
+
 for (( i=0; i<${#smallest}; i++ )); do
     URL1char="${TESTURL1:$i:1}"
     URL2char="${TESTURL2:$i:1}"
@@ -304,31 +310,24 @@ elif [[ "$WORD" -eq 1 ]]; then
         for word in $DATALINE; do
             
             ((DATA_MAP["$word"]++))
-            echo "plusplus ${DATA_MAP["$word"]}"
         done
-
-
-
         DATAAVE=0
         TOTAL=0
         for key in "${!DATA_MAP[@]}"; do
-            echo $key
+            
             if  [[ -v "KEY_MAP["$key"]" ]]; then
                 MIN=$(( "${DATA_MAP["$key"]}" < "${KEY_MAP["$key"]}" ? "${DATA_MAP["$key"]}" : "${KEY_MAP["$key"]}" ))
                 MAX=$(( "${DATA_MAP["$key"]}" > "${KEY_MAP["$key"]}" ? "${DATA_MAP["$key"]}" : "${KEY_MAP["$key"]}" ))
-                echo "min $MIN - max $MAX"
+                
                 DATAAVE=$(awk -v total="$DATAAVE" -v min="$MIN" -v max="$MAX" \
                     'BEGIN { printf "%.2f", total + (min / max) }')
                 ((TOTAL++))
             else
-                echo "key dosent exist"
                 ((TOTAL+="${DATA_MAP["$word"]}"))
             fi
         done
 
 
-        echo $TOTAL
-        echo $DATAAVE
         if [ "$TOTAL" -gt 0 ]; then
             DATAAVE=$(awk -v sum="$DATAAVE" -v len="$TOTAL" \
                 'BEGIN { printf "%.2f\n", sum / len }')
@@ -345,9 +344,6 @@ else
     echo "ERROR 114"
     exit 1
 fi
-
-
-
 
 
 
