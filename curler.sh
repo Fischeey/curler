@@ -32,73 +32,133 @@ for arg in "$@"; do
     # INPUT MODES
     #    
     elif [[ "$arg" == "-D" ]] && [[ "$MODESET" == 0 ]]; then
-        echo "activating DICTIONARY mode"
+        
         DICTIONARY=$COUNTER
         MODESET=1
     elif [[ "$arg" == "-D" ]] && [[ "$MODESET" == 1 ]]; then
-        echo "error - can only set one input mode"
+        echo " - ERROR - MUST SELECT EITHER RAW MODE OR DICTIONARY MODE - PROGRAM EXIT"
         exit 1
     elif [[ "$arg" == "-R" ]]  && [[ "$MODESET" == 0 ]]; then
-        echo "entering RAW mode"
         RAW=$COUNTER
         MODESET=1
     elif [[ "$arg" == "-R" ]]  && [[ "$MODESET" == 1 ]]; then
-        echo "error - can only set one input mode"
+        echo " - ERROR - MUST SELECT EITHER RAW MODE OR DICTIONARY MODE - PROGRAM EXIT"
         exit 1
 
     
     elif [[ "$arg" == "-N" ]]; then
-        echo "activating NESTED mode"
         NESTED=$COUNTER
-    elif [[ "$arg" == *"https://"* ]] || [[ $arg == *"https://"* ]]; then
-        echo "setting url"
-        URLSET=$COUNTER
+    elif [[ "$arg" == *"https://"* ]] || [[ $arg == *"http://"* ]]; then
+        URLSET=1
         URL=$arg
     elif [[ "$arg" == "-P" ]]; then 
-        echo "entering PARALLEL mode"
         PARALLEL=$COUNTER
     
 
-    #
+    #F$
     #ANALYSIS MODE
     #
-    elif [[ "$arg" == "-T" ]] && [[ "$ANALYSISSET" == 0 ]]; then 
-        echo "entering TITLE mode"
-        TITLE=1
-        ANALYSISSET=1
-    elif [[ "$arg" == "-T" ]] && [[ "$ANALYSISSET" == 1 ]]; then 
+    elif [[ ("$arg" == "-T" || "$arg" == "-B" || "$arg" == "-W" ) && "$ANALYSISSET" == 1 ]]; then 
         echo "ERROR - can only enter one analysis mode"
         exit 1
+    elif [[ "$arg" == "-T" ]] && [[ "$ANALYSISSET" == 0 ]]; then 
+        TITLE=1
+        ANALYSISSET=1
     elif [[ "$arg" == "-B" ]] && [[ "$ANALYSISSET" == 0 ]]; then 
-        echo "entering BODY mode"
         ANALYSISSET=1
         BODY=1
-    elif [[ "$arg" == "-B" ]] && [[ "$ANALYSISSET" == 1 ]]; then 
-        echo "ERROR - can only enter one analysis mode"
-        exit 1
     elif [[ "$arg" == "-W" ]] && [[ "$ANALYSISSET" == 0 ]]; then 
-        echo "entering WORD mode"
         ANALYSISSET=1
         WORD=1
-    elif [[ "$arg" == "-W" ]] && [[ "$ANALYSISSET" == 1 ]]; then 
-        echo "ERROR - can only enter one analysis mode"
-        exit 1
-    fi
+    
 
     elif [[ "$arg" == "-S" ]]; then 
-        echo "entering SUFFIX mode"
         TITLE=1
+    fi
     ((COUNTER++))
+    
 done 
 
+PARALLELVAL=1
+if [[ "$PARALLEL" -gt 0 ]]; then
+    TEMP=$((2 + "$PARALLEL"))
+    PARALLELVAL=${!TEMP}
+fi 
+
 #
-# need to implement proper url entered
+#
 #need to implement suffix mode
-# need to implement proper display menu with checks and X's 
 #need to implement timer 
+#
 
 
 
+RED='\e[31m'
+GREEN='\e[32m'
+RESET='\e[0m'
+
+
+TICK="\u2714" # ✔
+CROSS="\u2718" # ✘
+
+
+
+printf "\n\n--- PROGRAM SETUP ---\n"
+if [[ "$URLSET" -ne 0 ]]; then
+    echo -e " - URLSET - ${GREEN}${TICK}${RESET}  - $URL"
+else
+    echo -e " - URLSET - ${RED}${CROSS}${RESET}"
+    echo " - ERROR - URL - PROGRAM EXIT"
+    exit 1
+fi
+
+
+if [[ "$RAW" -ne 0 ]]; then
+    echo -e " - RAW MODE - ${GREEN}${TICK}${RESET}"
+    echo -e " - DICTIONARY MODE - ${RED}${CROSS}${RESET}"
+elif [[ "$DICTIONARY" -ne 0 ]]; then
+    echo -e " - RAW MODE - ${RED}${CROSS}${RESET}"
+    echo -e " - DICTIONARY MODE - ${GREEN}${TICK}${RESET}"
+else
+    echo " - ERROR - MUST SELECT EITHER RAW MODE OR DICTIONARY MODE - PROGRAM EXIT"
+    exit 1
+fi
+
+if [[ "$NESTED" -ne 0 ]]; then
+    echo -e " - NESTED MODE - ${GREEN}${TICK}${RESET}"
+else 
+    echo -e " - NESTED MODE - ${RED}${CROSS}${RESET}"
+fi
+
+if [[ "$PARALLEL" -ne 0 ]]; then
+    echo -e " - PARALLEL MODE - ${GREEN}${TICK}${RESET}   - SETTING TO $PARALLELVAL"
+else 
+    echo -e " - PARALLEL MODE - ${RED}${TICK}${RESET} - SETTING TO 1"
+fi
+
+if [[ "$TITLE" -ne 0 ]]; then
+    echo -e " - TITLE MODE - ${GREEN}${TICK}${RESET}"
+    echo -e " - BODY MODE - ${RED}${CROSS}${RESET}"
+    echo -e " - WORD MODE - ${RED}${CROSS}${RESET}"
+elif [[ "$BODY" -ne 0 ]]; then
+    echo -e " - TITLE MODE - ${RED}${CROSS}${RESET}"
+    echo -e " - BODY MODE - ${GREEN}${TICK}${RESET}"
+    echo -e " - WORD MODE - ${RED}${CROSS}${RESET}"
+elif [[ "$WORD" -ne 0 ]]; then
+    echo -e " - TITLE MODE - ${RED}${CROSS}${RESET}"
+    echo -e " - BODY MODE - ${RED}${CROSS}${RESET}"
+    echo -e " - WORD MODE - ${GREEN}${TICK}${RESET}"
+else
+    echo " - ERROR - MUST SELECT AN ANALYSIS MODE - PROGRAM EXIT"
+    exit 1
+fi
+
+if [[ "$SUFFIX" -ne 0 ]]; then
+    echo -e " - SUFFIX MODE - ${GREEN}${TICK}${RESET}"
+else 
+    echo -e " - SUFFIX MODE - ${RED}${CROSS}${RESET}"
+fi
+echo "--- PROGRAM RUN ---"
 
 
 
@@ -108,10 +168,8 @@ done
 
 #dictionary setup
 if [[ "$DICTIONARY" -gt 0 ]]; then
-    echo "dictionary non nested"
     TEMP=$((2 + "$DICTIONARY"))
     DICTIONARY_VAL=${!TEMP}
-    echo $DICTIONARY_VAL
     if [[ "$NESTED" -gt 0 ]]; then
         TEMP=$((2 + "$NESTED"))
         NESTED_VAL=${!TEMP}
@@ -154,19 +212,11 @@ fi
 if [[ "$RAW" -gt 0 ]]; then
     TEMP=$((2 + "$RAW"))
     RAW_VAL=${!TEMP}
-    echo $RAW_VAL
+    
     
 fi
 
 
-
-
-PARALLEL_VAL=1
-if [[ "$PARALLEL" -gt 0 ]]; then
-    TEMP=$((2 + "$PARALLEL"))
-    PARALLEL_VAL=${!TEMP}
-
-fi 
 
 curler_T()
 {
@@ -185,11 +235,11 @@ export -f curler_B
 export -f curler_W
 
 if [[ "$TITLE" -eq 1 ]]; then
-    cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_T "$1" ' _   "{}"
+    cat TEMP_URLS.txt | xargs -P $PARALLELVAL -I {} bash -c 'curler_T "$1" ' _   "{}"
 elif [[ "$BODY" -eq 1 ]]; then
-    cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_B "$1" ' _   "{}"
+    cat TEMP_URLS.txt | xargs -P $PARALLELVAL -I {} bash -c 'curler_B "$1" ' _   "{}"
 elif [[ "$WORD" -eq 1 ]]; then
-    cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_W "$1" ' _   "{}"
+    cat TEMP_URLS.txt | xargs -P $PARALLELVAL -I {} bash -c 'curler_W "$1" ' _   "{}"
 else
     echo "ERROR 111"
     exit 1
@@ -197,9 +247,6 @@ fi
 
     
 
-
-
-echo "run analysis"
 
  
 if [[ "$TITLE" -eq 1 ]]; then
@@ -297,9 +344,7 @@ elif [[ "$WORD" -eq 1 ]]; then
             KEY_MAP[$word]=1
         fi
     done
-    # for key in "${!KEY_MAP[@]}"; do
-    #     printf "%-10s -> %s\n" "$key" "${KEY_MAP[$key]}"
-    # done
+
     while IFS= read -r DATALINE; do
         TITLESTR="${DATALINE%%>*}"
         DATALINE="${DATALINE#*>}"
@@ -329,8 +374,7 @@ elif [[ "$WORD" -eq 1 ]]; then
 
 
         if [ "$TOTAL" -gt 0 ]; then
-            DATAAVE=$(awk -v sum="$DATAAVE" -v len="$TOTAL" \
-                'BEGIN { printf "%.2f\n", sum / len }')
+            DATAAVE=$(awk -v sum="$DATAAVE" -v len="$TOTAL" \ 'BEGIN { printf "%.2f\n", sum / len }')
         else
             echo "TOTAL is zero"
         fi
@@ -348,5 +392,5 @@ fi
 
 
 #rm -rf TEMP_URLS.txt
-echo "end of program"
+echo "--- PROGRAM END ---"
 exit 0
