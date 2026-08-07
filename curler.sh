@@ -31,8 +31,12 @@ cleanup() {
     # Optional: Terminate residual background processes spawned by this script
     kill $(jobs -p) 2>/dev/null
 }
-
 trap cleanup EXIT INT TERM
+
+
+
+
+
 if [ "$#" -eq 1 ]; then 
         echo "You must enter a url, dictionary location, and depth level in the format ./script.sh https://www.example.com /path/to/dictionary  1"
         exit 1
@@ -121,7 +125,19 @@ if [[ "$SUFFIX" -gt 0 ]]; then
 fi
 
 
-#need to implement response mode
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -208,20 +224,6 @@ echo "--- PROGRAM RUN ---"
 
 
 
-TIMER(){
-    urlcount=$(wc -l < "TEMP_URLS.txt")
-    outcount=$(wc -l < "out.txt")
-    timer=0
-    while [ "$urlcount" -gt "$outcount" ] && [ -f TEMP_URLS.txt ] ; do
-        urlcount=$(wc -l < "TEMP_URLS.txt")
-        outcount=$(wc -l < "out.txt")
-        echo "LINES PROCESSED = $outcount/$urlcount --- TIME ELAPSED = "
-        sleep 2
-        (( timer += 2 ))
-    done
-}
-
-TIMER &
 
 
 
@@ -230,73 +232,13 @@ TIMER &
 
 
 
-#dictionary setup
-echo "url = $URL" >> TEMP_URLS.txt
-if [[ "$DICTIONARY" -gt 0 ]]; then
-    if [[ "$NESTED" -gt 0 ]]; then
-        while IFS= read -r NEST; do
-            while IFS= read -r LINE; do
-                echo "$URL/$NEST/$LINE" >> TEMP_URLS.txt
-            done < "$DICTIONARY_VAL"
-        done < "$NESTED_VAL"
-    else
-        while IFS= read -r LINE; do
-            echo "$URL/$LINE" >> TEMP_URLS.txt
-        done < "$DICTIONARY_VAL"
-    fi
-elif [[ "$RAW" -gt 0 ]]; then
-    echo "RAW"
-fi
-
-if [[ "$SUFFIX" -gt 0 ]]; then
-    cp TEMP_URLS.txt SUFFIX_TEMP.txt
-    while IFS= read -r SUFFIX; do
-        while IFS= read -r LINE; do
-            echo "$LINE/$SUFFIX" >> TEMP_URLS.txt
-        done < TEMP_URLS.txt
-    done < "$SUFFIX_VAL"
-fi
 
 
 
-curler_T()
-{
-    printf "%s>%s\n" "$1" "$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 50000 -s  "${1}" | grep -iPo '(?<=<title>).*?(?=</title>)')" >> CURLOUT_TEMP.txt
-}
-curler_B()
-{
-    printf "%s>%s\n" "$1" "$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s  "${1}"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g'  -e 's/[[:space:]]//g' | tr -d '\n\r')">> CURLOUT_TEMP.txt
-}
-curler_W()
-{
-    printf "%s>%s\n" "$1" "$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s  "${1}"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' | tr -d '\n\r')">> CURLOUT_TEMP.txt
-}
-curler_C()
-{
-    printf "%s>%s\n" "$1" "$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -sI -o /dev/null -w "%{http_code}" "${1}" )" >> CURLOUT_TEMP.txt
-}
-export -f curler_T
-export -f curler_B
-export -f curler_W
-export -f curler_C
-
-if [[ "$TITLE" -eq 1 ]]; then
-    cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_T "$1" ' _   "{}"
-elif [[ "$BODY" -eq 1 ]]; then
-    cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_B "$1" ' _   "{}"
-elif [[ "$WORD" -eq 1 ]]; then
-    cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_W "$1" ' _   "{}"
-elif [[ "$CODE" -eq 1 ]]; then
-    cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_C "$1" ' _   "{}"
-else
-    echo "ERROR 111"
-    exit 1
-fi
-
-    
 
 
- 
+
+
 if [[ "$TITLE" -eq 1 ]]; then
     TESTURL1=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | grep -iPo '(?<=<title>).*?(?=</title>)')
     TESTURL2=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | grep -iPo '(?<=<title>).*?(?=</title>)')
@@ -309,87 +251,310 @@ elif [[ "$WORD" -eq 1 ]]; then
     TESTURL1=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' | tr -d '\n\r')
     TESTURL2=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' | tr -d '\n\r')
     TESTURL3=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' | tr -d '\n\r') 
-elif [[ "$CODE" -eq 1 ]]; then
-    TESTURL1=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -sI -o /dev/null -w "%{http_code}\n" "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)")
-    TESTURL2=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -sI -o /dev/null -w "%{http_code}\n" "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)")
-    TESTURL3=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -sI -o /dev/null -w "%{http_code}\n" "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)")
-    echo $TESTURL1
-    echo $TESTURL2
-
-
-else
+elif [[ "$CODE" -ne 1 ]]; then
     echo "ERROR 112"
     exit 1
 fi
-if [ "${#TESTURL1}" -le "${#TESTURL2}" ] && [ "${#TESTURL1}" -le "${#TESTURL3}" ]; then
-    smallest=$TESTURL1
-elif [ "${#TESTURL2}" -le "${#TESTURL1}" ] && [ "${#TESTURL2}" -le "${#TESTURL3}" ]; then
-    smallest=$TESTURL2
-else
-    smallest=$TESTURL3
-fi
-
-TESTURL1AVE=0
-TESTURL2AVE=0
-TESTURL3AVE=0
-
-for (( i=0; i<${#smallest}; i++ )); do
-    URL1char="${TESTURL1:$i:1}"
-    URL2char="${TESTURL2:$i:1}"
-    URL3char="${TESTURL3:$i:1}"
-
-    if [[ "$URL1char" = "$URL2char" ]] && [[ "$URL2char" = "$URL3char" ]]; then
-    
-        ((TESTURL1AVE++))
-        ((TESTURL2AVE++))
-        ((TESTURL3AVE++))
-    elif [[ "$URL1char" = "$URL2char" ]] ; then
-        ((TESTURL1AVE++))
-        ((TESTURL2AVE++))
-    elif [[ "$URL1char" = "$URL2char" ]] ; then
-        ((TESTURL2AVE++))
-        ((TESTURL3AVE++))
+if [[ "$TITLE" -eq 1 ]] || [[ "$BODY" -eq 1 ]] || [[ "$WORD" -eq 1 ]]; then
+    if [ "${#TESTURL1}" -le "${#TESTURL2}" ] && [ "${#TESTURL1}" -le "${#TESTURL3}" ]; then
+        smallest=$TESTURL1
+    elif [ "${#TESTURL2}" -le "${#TESTURL1}" ] && [ "${#TESTURL2}" -le "${#TESTURL3}" ]; then
+        smallest=$TESTURL2
+    else
+        smallest=$TESTURL3
     fi
-done
-((TESTURL1AVE /= "${#smallest}"))
-((TESTURL2AVE /= "${#smallest}"))
-((TESTURL3AVE /= "${#smallest}"))
 
-if awk "BEGIN {exit !($TESTURL1AVE > $TESTURL2AVE && $TESTURL1AVE > $TESTURL3AVE)}"; then
-    greatest=$TESTURL1
-elif awk "BEGIN {exit !($TESTURL2AVE > $TESTURL1AVE && $TESTURL2AVE > $TESTURL3AVE)}"; then
-    greatest=$TESTURL2
-else
-    greatest=$TESTURL3
+    TESTURL1AVE=0
+    TESTURL2AVE=0
+    TESTURL3AVE=0
+
+    for (( i=0; i<${#smallest}; i++ )); do
+        URL1char="${TESTURL1:$i:1}"
+        URL2char="${TESTURL2:$i:1}"
+        URL3char="${TESTURL3:$i:1}"
+
+        if [[ "$URL1char" = "$URL2char" ]] && [[ "$URL2char" = "$URL3char" ]]; then
+        
+            ((TESTURL1AVE++))
+            ((TESTURL2AVE++))
+            ((TESTURL3AVE++))
+        elif [[ "$URL1char" = "$URL2char" ]] ; then
+            ((TESTURL1AVE++))
+            ((TESTURL2AVE++))
+        elif [[ "$URL1char" = "$URL2char" ]] ; then
+            ((TESTURL2AVE++))
+            ((TESTURL3AVE++))
+        fi
+    done
+    ((TESTURL1AVE /= "${#smallest}"))
+    ((TESTURL2AVE /= "${#smallest}"))
+    ((TESTURL3AVE /= "${#smallest}"))
+
+    if awk "BEGIN {exit !($TESTURL1AVE > $TESTURL2AVE && $TESTURL1AVE > $TESTURL3AVE)}"; then
+        greatest=$TESTURL1
+    elif awk "BEGIN {exit !($TESTURL2AVE > $TESTURL1AVE && $TESTURL2AVE > $TESTURL3AVE)}"; then
+        greatest=$TESTURL2
+    else
+        greatest=$TESTURL3
+    fi
 fi
 
-if [[ "$TITLE" -eq 1 ]] || [[ "$BODY" -eq 1 ]] || [[ "$CODE" -eq 1 ]]  ; then
-    while IFS= read -r DATALINE; do
-        TITLESTR="${DATALINE%%>*}"
-        DATALINE="${DATALINE#*>}"
-        DATAAVE=0
-        for (( i=0; i<${#smallest}; i++ )); do
-            KEYCHAR="${greatest:$i:1}"
-            TESTCHAR="${DATALINE:$i:1}"
-            if [[ "$TESTCHAR" != "$KEYCHAR" ]]; then
-                ((DATAAVE++))
-            fi
 
-        done
-        LENGTH="${#smallest}"
-        if [ "$LENGTH" -gt 0 ]; then
-            DATAAVE=$(awk -v sum="$DATAAVE" -v len="$LENGTH" \
-                'BEGIN { printf "%.2f\n", sum / len }')
-        else
-            echo "LENGTH is zero"
-        fi
-        if awk "BEGIN {exit !($DATAAVE > 0.5)}"; then
-            echo "$TITLESTR : UNIQUE VALUE : $DATAAVE" >> out.txt
-        fi
-    done < CURLOUT_TEMP.txt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+TIMER(){
+    urlcount=$(wc -l < "TEMP_URLS.txt")
+    CURLcount=$(wc -l < "CURLOUT_TEMP.txt")
+    timer=1
+    while [ -f TEMP_URLS.txt ]; do
+        urlcount=$(wc -l < "TEMP_URLS.txt")
+        outcount=$(wc -l < "CURLOUT_TEMP.txt")
+        echo "LINES PROCESSED = $outcount/$urlcount --- TIME ELAPSED = "
+        sleep 2
+        ((timer += 2))
+    done
+}
+
+TIMER &
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#dictionary setup
+
+
+CURLER_DICT_FILL()
+{
+    echo "$2/$1" | sed 's/[^a-z:./]//g' >> TEMP_URLS.txt
+}
+CURLER_DICTNEST_FILL()
+{
+    while IFS= read -r LINE; do
+        sed "$LINE/$1" | sed 's/[^a-z:./]//g' >> TEMP_URLS.txt
+    done < NESTED_TEMP.txt
+}
+curler_NESTED_FILL()
+{
+    echo "$2/$1" | sed 's/[^a-z:./]//g' >> NESTED_TEMP.txt
+}
+curler_SUFFIX_FILL()
+{
+    
+    while IFS= read -r SUFFIX; do
+        echo "$1/$SUFFIX" | sed 's/[^a-z:./]//g' >> TEMP_URLS.txt
+    done < "$SUFFIX_VAL"
+}
+
+
+if [[ "$NESTED" -gt 0 ]]; then
+    cat $NESTED_VAL | xargs -P $PARALLEL_VAL -I {} bash -c 'CURLER_NESTED_FILL "$1" "2"' _  {} "$URL"
+fi
+if [[ "$DICTIONARY" -gt 0 ]]; then
+    if [[ "$NESTED" -gt 0 ]]; then
+        cat NESTED_TEMP.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'CURLER_DICTNEST_FILL "$1" ' _  {} 
+    else
+        cat $DICTIONARY_VAL | xargs -P $PARALLEL_VAL -I {} bash -c 'CURLER_DICT_FILL "$1" "2"' _  {} "$URL"
+    fi
+
+elif [[ "$RAW" -gt 0 ]]; then
+ # Set your max length here
+awk -v max=$RAW_VAL '
+BEGIN {
+    # Define the 62 alphanumeric characters
+    len = split("a b c d e f g h i j k l m n o p q r s t u v w x y z " \
+                "0 1 2 3 4 5 6 7 8 9", c, " ")
+    for (i = 1; i <= max; i++) gen("", i)
+}
+function gen(prefix, n) {
+    if (n == 0) { print prefix; return }
+    for (j = 1; j <= len; j++) gen(prefix c[j], n - 1)
+}
+'
+fi
+if [[ "$SUFFIX" -gt 0 ]]; then
+    cp TEMP_URLS.txt SUFFIX_TEMP.txt
+    cat SUFFIX_TEMP.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_SUFFIX_FILL "$1" ' _  {}
+fi
+
+
+
+
+
+
+
+
+
+
+curler_CURLS_T()
+{
+    printf "%s>%s\n" "$1" "$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 50000 -s  "${1}" | grep -iPo '(?<=<title>).*?(?=</title>)')" >> CURLOUT_TEMP.txt
+}
+curler_CURLS_B()
+{
+    printf "%s>%s\n" "$1" "$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s  "${1}"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g'  -e 's/[[:space:]]//g' | tr -d '\n\r')">> CURLOUT_TEMP.txt
+}
+curler_CURLS_W()
+{
+    printf "%s>%s\n" "$1" "$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s  "${1}"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' | tr -d '\n\r')">> CURLOUT_TEMP.txt
+}
+curler_CURLS_C()
+{
+    printf "%s>%s\n" "$1" "$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -sI -o /dev/null -w "%{http_code}" "${1}" )" >> CURLOUT_TEMP.txt
+}
+export -f curler_CURLS_T
+export -f curler_CURLS_B
+export -f curler_CURLS_W
+export -f curler_CURLS_C
+
+if [[ "$TITLE" -eq 1 ]]; then
+    cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_CURLS_T "$1" ' _   "{}"
+elif [[ "$BODY" -eq 1 ]]; then
+    cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_CURLS_B "$1" ' _   "{}"
 elif [[ "$WORD" -eq 1 ]]; then
+    cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_CURLS_W "$1" ' _   "{}"
+elif [[ "$CODE" -eq 1 ]]; then
+    cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_CURLS_C "$1" ' _   "{}"
+else
+    echo "ERROR 111"
+    exit 1
+fi
+
+    
 
 
+
+
+
+curler_ANALYSIS_TB()
+{
+    TITLESTR="${1%%>*}"
+    DATALINE="${1#*>}"
+    DATAAVE=0
+    for (( i=0; i<${#smallest}; i++ )); do
+        KEYCHAR="${2:$i:1}"
+        TESTCHAR="${DATALINE:$i:1}"
+        if [[ "$TESTCHAR" != "$KEYCHAR" ]]; then
+            ((DATAAVE++))
+        fi
+
+    done
+    LENGTH="${#smallest}"
+    if [ "$LENGTH" -gt 0 ]; then
+        DATAAVE=$(awk -v sum="$DATAAVE" -v len="$LENGTH" \
+            'BEGIN { printf "%.2f\n", sum / len }')
+    else
+        echo "LENGTH is zero"
+    fi
+    if awk "BEGIN {exit !($DATAAVE > 0.5)}"; then
+        echo "$TITLESTR : UNIQUE VALUE : $DATAAVE" >> out.txt
+    fi
+}
+curler_ANALYSIS_C()
+{
+    
+    TITLESTR="${1%%>*}"
+    CODELINE="${1#*>}"
+    if [ "$CODELINE" -ne 404 ]; then
+        echo "$TITLESTR : UNIQUE VALUE : $CODELINE" >> out.txt
+    fi
+       
+}
+curler_ANALYSIS_W()
+{
+
+
+    
+    TITLESTR="${1%%>*}"
+    DATALINE="${1#*>}"
+    KEY_MAP=$2
+    declare -A DATA_MAP
+    DATA_MAP=()
+
+    for word in $DATALINE; do
+        
+        ((DATA_MAP["$word"]++))
+    done
+    DATAAVE=0
+    TOTAL=0
+    for key in "${!DATA_MAP[@]}"; do
+        
+        if  [[ -v "KEY_MAP["$key"]" ]]; then
+            MIN=$(( "${DATA_MAP["$key"]}" < "${KEY_MAP["$key"]}" ? "${DATA_MAP["$key"]}" : "${KEY_MAP["$key"]}" ))
+            MAX=$(( "${DATA_MAP["$key"]}" > "${KEY_MAP["$key"]}" ? "${DATA_MAP["$key"]}" : "${KEY_MAP["$key"]}" ))
+            
+            DATAAVE=$(awk -v total="$DATAAVE" -v min="$MIN" -v max="$MAX" \
+                'BEGIN { printf "%.2f", total + (min / max) }')
+            ((TOTAL++))
+        else
+            ((TOTAL+="${DATA_MAP["$word"]}"))
+        fi
+    done
+
+
+    if [ "$TOTAL" -gt 0 ]; then
+        DATAAVE=$(awk -v sum="$DATAAVE" -v len="$TOTAL" \ 'BEGIN { printf "%.2f\n", sum / len }')
+    else
+        echo "TOTAL is zero"
+    fi
+    DATAAVE=$(awk -v sum="$DATAAVE" \
+            'BEGIN { printf "%.2f\n", 1 - sum }')
+    #if awk "BEGIN {exit !($DATAAVE > 0.5)}"; then
+        echo "$TITLESTR : UNIQUE VALUE : $DATAAVE" >> out.txt
+    #fi
+      
+}
+
+
+
+
+ 
+if [[ "$TITLE" -eq 1 ]] || [[ "$BODY" -eq 1 ]]  ; then
+    cat CURLOUT_TEMP.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_ANALYSIS_TB "$1" "2"' _  {} "$greatest"
+elif [[ "$CODE" -eq 1 ]]; then
+    cat CURLOUT_TEMP.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_ANALYSIS_C "$1"' _  {} 
+elif [[ "$WORD" -eq 1 ]]; then
     #build key map
     declare -A KEY_MAP
     KEY_MAP=()
@@ -400,52 +565,24 @@ elif [[ "$WORD" -eq 1 ]]; then
             KEY_MAP[$word]=1
         fi
     done
-
-    while IFS= read -r DATALINE; do
-        TITLESTR="${DATALINE%%>*}"
-        DATALINE="${DATALINE#*>}"
-
-        declare -A DATA_MAP
-        DATA_MAP=()
-
-        for word in $DATALINE; do
-            
-            ((DATA_MAP["$word"]++))
-        done
-        DATAAVE=0
-        TOTAL=0
-        for key in "${!DATA_MAP[@]}"; do
-            
-            if  [[ -v "KEY_MAP["$key"]" ]]; then
-                MIN=$(( "${DATA_MAP["$key"]}" < "${KEY_MAP["$key"]}" ? "${DATA_MAP["$key"]}" : "${KEY_MAP["$key"]}" ))
-                MAX=$(( "${DATA_MAP["$key"]}" > "${KEY_MAP["$key"]}" ? "${DATA_MAP["$key"]}" : "${KEY_MAP["$key"]}" ))
-                
-                DATAAVE=$(awk -v total="$DATAAVE" -v min="$MIN" -v max="$MAX" \
-                    'BEGIN { printf "%.2f", total + (min / max) }')
-                ((TOTAL++))
-            else
-                ((TOTAL+="${DATA_MAP["$word"]}"))
-            fi
-        done
-
-
-        if [ "$TOTAL" -gt 0 ]; then
-            DATAAVE=$(awk -v sum="$DATAAVE" -v len="$TOTAL" \ 'BEGIN { printf "%.2f\n", sum / len }')
-        else
-            echo "TOTAL is zero"
-        fi
-        DATAAVE=$(awk -v sum="$DATAAVE" \
-                'BEGIN { printf "%.2f\n", 1 - sum }')
-        #if awk "BEGIN {exit !($DATAAVE > 0.5)}"; then
-            echo "$TITLESTR : UNIQUE VALUE : $DATAAVE" >> out.txt
-        #fi
-    done < CURLOUT_TEMP.txt
+    cat CURLOUT_TEMP.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_ANALYSIS_W "$1" "2"' _  {} "$KEY_MAP"
 else
-    echo "ERROR 114"
+    echo "ERROR 114" 
     exit 1
 fi
 
 
 
-echo "--- PROGRAM END ---"
+
+
+
+
+
+
+
+
+
+
+
+
 exit 0
