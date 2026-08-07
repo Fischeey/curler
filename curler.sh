@@ -7,6 +7,7 @@ URLSET=0
 COUNTER=0
 RAW=0
 PARALLEL=0
+CODE=0
 
 ANALYSISSET=0
 TITLE=0
@@ -18,8 +19,20 @@ touch TEMP_URLS.txt
 : > TEMP_URLS.txt
 touch CURLOUT_TEMP.txt
 : > CURLOUT_TEMP.txt
+touch SUFFIX_TEMP.txt
+: > SUFFIX_TEMP.txt
 
 
+cleanup() {
+    echo "🧹 Executing cleanup operations..."
+    
+    # Remove temporary directories safely
+    kill "$BACKGROUND_PID" 2>/dev/null
+    # Optional: Terminate residual background processes spawned by this script
+    kill $(jobs -p) 2>/dev/null
+}
+
+trap cleanup EXIT INT TERM
 if [ "$#" -eq 1 ]; then 
         echo "You must enter a url, dictionary location, and depth level in the format ./script.sh https://www.example.com /path/to/dictionary  1"
         exit 1
@@ -70,8 +83,9 @@ for arg in "$@"; do
     elif [[ "$arg" == "-W" ]] && [[ "$ANALYSISSET" == 0 ]]; then 
         ANALYSISSET=1
         WORD=1
-    
-
+    elif [[ "$arg" == "-C" ]] && [[ "$ANALYSISSET" == 0 ]]; then 
+        ANALYSISSET=1
+        CODE=1
     elif [[ "$arg" == "-S" ]]; then 
         TITLE=1
     fi
@@ -79,17 +93,35 @@ for arg in "$@"; do
     
 done 
 
-PARALLELVAL=1
+PARALLEL_VAL=1
+DICTIONARY_VAL=1
+RAW_VAL=1
+NESTED_VAL=1
+SUFFIX_VAL=1
+
 if [[ "$PARALLEL" -gt 0 ]]; then
     TEMP=$((2 + "$PARALLEL"))
-    PARALLELVAL=${!TEMP}
+    PARALLEL_VAL=${!TEMP}
 fi 
+if [[ "$DICTIONARY" -gt 0 ]]; then
+    TEMP=$((2 + "$DICTIONARY"))
+    DICTIONARY_VAL=${!TEMP}
+fi
+if [[ "$RAW" -gt 0 ]]; then
+    TEMP=$((2 + "$RAW"))
+    RAW_VAL=${!TEMP}
+fi
+if [[ "$NESTED" -gt 0 ]]; then
+    TEMP=$((2 + "$NESTED"))
+    NESTED_VAL=${!TEMP}
+fi
+if [[ "$SUFFIX" -gt 0 ]]; then
+    TEMP=$((2 + "$SUFFIC"))
+    SUFFIX_VAL=${!TEMP}
+fi
 
-#
-#
-#need to implement suffix mode
-#need to implement timer 
-#
+
+#need to implement response mode
 
 
 
@@ -117,21 +149,26 @@ if [[ "$RAW" -ne 0 ]]; then
     echo -e " - RAW MODE - ${GREEN}${TICK}${RESET}"
     echo -e " - DICTIONARY MODE - ${RED}${CROSS}${RESET}"
 elif [[ "$DICTIONARY" -ne 0 ]]; then
+    if [ ! -f "$DICTIONARY_VAL" ]; then
+        echo "Error: Dictionary file not found at $DICTIONARY_VAL."
+        echo "On Debian/Ubuntu, install it using: sudo apt install wamerican"
+        exit 1
+    fi
     echo -e " - RAW MODE - ${RED}${CROSS}${RESET}"
-    echo -e " - DICTIONARY MODE - ${GREEN}${TICK}${RESET}"
+    echo -e " - DICTIONARY MODE - ${GREEN}${TICK}${RESET} - $DICTIONARY_VAL"
 else
     echo " - ERROR - MUST SELECT EITHER RAW MODE OR DICTIONARY MODE - PROGRAM EXIT"
     exit 1
 fi
 
 if [[ "$NESTED" -ne 0 ]]; then
-    echo -e " - NESTED MODE - ${GREEN}${TICK}${RESET}"
+    echo -e " - NESTED MODE - ${GREEN}${TICK}${RESET} - $NESTED_VAL"
 else 
     echo -e " - NESTED MODE - ${RED}${CROSS}${RESET}"
 fi
 
 if [[ "$PARALLEL" -ne 0 ]]; then
-    echo -e " - PARALLEL MODE - ${GREEN}${TICK}${RESET}   - SETTING TO $PARALLELVAL"
+    echo -e " - PARALLEL MODE - ${GREEN}${TICK}${RESET}   - SETTING TO $PARALLEL_VAL"
 else 
     echo -e " - PARALLEL MODE - ${RED}${TICK}${RESET} - SETTING TO 1"
 fi
@@ -140,14 +177,22 @@ if [[ "$TITLE" -ne 0 ]]; then
     echo -e " - TITLE MODE - ${GREEN}${TICK}${RESET}"
     echo -e " - BODY MODE - ${RED}${CROSS}${RESET}"
     echo -e " - WORD MODE - ${RED}${CROSS}${RESET}"
+    echo -e " - CODE MODE - ${RED}${CROSS}${RESET}"
 elif [[ "$BODY" -ne 0 ]]; then
     echo -e " - TITLE MODE - ${RED}${CROSS}${RESET}"
     echo -e " - BODY MODE - ${GREEN}${TICK}${RESET}"
     echo -e " - WORD MODE - ${RED}${CROSS}${RESET}"
+    echo -e " - CODE MODE - ${RED}${CROSS}${RESET}"
 elif [[ "$WORD" -ne 0 ]]; then
     echo -e " - TITLE MODE - ${RED}${CROSS}${RESET}"
     echo -e " - BODY MODE - ${RED}${CROSS}${RESET}"
     echo -e " - WORD MODE - ${GREEN}${TICK}${RESET}"
+    echo -e " - CODE MODE - ${RED}${CROSS}${RESET}"
+elif [[ "$CODE" -ne 0 ]]; then
+    echo -e " - TITLE MODE - ${RED}${CROSS}${RESET}"
+    echo -e " - BODY MODE - ${RED}${CROSS}${RESET}"
+    echo -e " - WORD MODE - ${RED}${CROSS}${RESET}"
+    echo -e " - CODE MODE - ${GREEN}${TICK}${RESET}"
 else
     echo " - ERROR - MUST SELECT AN ANALYSIS MODE - PROGRAM EXIT"
     exit 1
@@ -163,57 +208,53 @@ echo "--- PROGRAM RUN ---"
 
 
 
+TIMER(){
+    urlcount=$(wc -l < "TEMP_URLS.txt")
+    outcount=$(wc -l < "out.txt")
+    timer=0
+    while [ "$urlcount" -gt "$outcount" ] && [ -f TEMP_URLS.txt ] ; do
+        urlcount=$(wc -l < "TEMP_URLS.txt")
+        outcount=$(wc -l < "out.txt")
+        echo "LINES PROCESSED = $outcount/$urlcount --- TIME ELAPSED = "
+        sleep 2
+        (( timer += 2 ))
+    done
+}
+
+TIMER &
+
+
+
+
+
 
 
 
 #dictionary setup
+echo "url = $URL" >> TEMP_URLS.txt
 if [[ "$DICTIONARY" -gt 0 ]]; then
-    TEMP=$((2 + "$DICTIONARY"))
-    DICTIONARY_VAL=${!TEMP}
     if [[ "$NESTED" -gt 0 ]]; then
-        TEMP=$((2 + "$NESTED"))
-        NESTED_VAL=${!TEMP}
-        echo $NESTED_VAL
-        echo "dictionary nested"
-        if [[ "$PARALLEL" = 0 ]]; then
-            while IFS= read -r NEST; do
-                while IFS= read -r LINE; do
-                    echo "url = $URL/$NEST/$LINE" >> TEMP_URLS.txt
-                done < "$DICTIONARY_VAL"
-            done < "$NESTED_VAL"
-        else
-            while IFS= read -r NEST; do
-                while IFS= read -r LINE; do
-                    echo "$URL/$NEST/$LINE" >> TEMP_URLS.txt
-                done < "$DICTIONARY_VAL"
-            done < "$NESTED_VAL"
-        fi
+        while IFS= read -r NEST; do
+            while IFS= read -r LINE; do
+                echo "$URL/$NEST/$LINE" >> TEMP_URLS.txt
+            done < "$DICTIONARY_VAL"
+        done < "$NESTED_VAL"
     else
-
-        if [ ! -f "$DICTIONARY_VAL" ]; then
-            echo "Error: Dictionary file not found at $DICTIONARY_VAL."
-            echo "On Debian/Ubuntu, install it using: sudo apt install wamerican"
-            exit 1
-        fi
-        if [[ "$PARALLEL" = 0 ]]; then
-            echo "url = $URL" >> TEMP_URLS.txt
-            while IFS= read -r LINE; do
-                echo "url = $URL/$LINE" >> TEMP_URLS.txt
-            done < "$DICTIONARY_VAL"
-        else
-            echo "$URL" >> TEMP_URLS.txt
-            while IFS= read -r LINE; do
-                echo "$URL/$LINE" >> TEMP_URLS.txt
-            done < "$DICTIONARY_VAL"
-        fi
+        while IFS= read -r LINE; do
+            echo "$URL/$LINE" >> TEMP_URLS.txt
+        done < "$DICTIONARY_VAL"
     fi
+elif [[ "$RAW" -gt 0 ]]; then
+    echo "RAW"
 fi
 
-if [[ "$RAW" -gt 0 ]]; then
-    TEMP=$((2 + "$RAW"))
-    RAW_VAL=${!TEMP}
-    
-    
+if [[ "$SUFFIX" -gt 0 ]]; then
+    cp TEMP_URLS.txt SUFFIX_TEMP.txt
+    while IFS= read -r SUFFIX; do
+        while IFS= read -r LINE; do
+            echo "$LINE/$SUFFIX" >> TEMP_URLS.txt
+        done < TEMP_URLS.txt
+    done < "$SUFFIX_VAL"
 fi
 
 
@@ -230,16 +271,23 @@ curler_W()
 {
     printf "%s>%s\n" "$1" "$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s  "${1}"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' | tr -d '\n\r')">> CURLOUT_TEMP.txt
 }
+curler_C()
+{
+    printf "%s>%s\n" "$1" "$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -sI -o /dev/null -w "%{http_code}" "${1}" )" >> CURLOUT_TEMP.txt
+}
 export -f curler_T
 export -f curler_B
 export -f curler_W
+export -f curler_C
 
 if [[ "$TITLE" -eq 1 ]]; then
-    cat TEMP_URLS.txt | xargs -P $PARALLELVAL -I {} bash -c 'curler_T "$1" ' _   "{}"
+    cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_T "$1" ' _   "{}"
 elif [[ "$BODY" -eq 1 ]]; then
-    cat TEMP_URLS.txt | xargs -P $PARALLELVAL -I {} bash -c 'curler_B "$1" ' _   "{}"
+    cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_B "$1" ' _   "{}"
 elif [[ "$WORD" -eq 1 ]]; then
-    cat TEMP_URLS.txt | xargs -P $PARALLELVAL -I {} bash -c 'curler_W "$1" ' _   "{}"
+    cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_W "$1" ' _   "{}"
+elif [[ "$CODE" -eq 1 ]]; then
+    cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_C "$1" ' _   "{}"
 else
     echo "ERROR 111"
     exit 1
@@ -261,6 +309,14 @@ elif [[ "$WORD" -eq 1 ]]; then
     TESTURL1=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' | tr -d '\n\r')
     TESTURL2=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' | tr -d '\n\r')
     TESTURL3=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' | tr -d '\n\r') 
+elif [[ "$CODE" -eq 1 ]]; then
+    TESTURL1=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -sI -o /dev/null -w "%{http_code}\n" "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)")
+    TESTURL2=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -sI -o /dev/null -w "%{http_code}\n" "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)")
+    TESTURL3=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -sI -o /dev/null -w "%{http_code}\n" "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)")
+    echo $TESTURL1
+    echo $TESTURL2
+
+
 else
     echo "ERROR 112"
     exit 1
@@ -307,7 +363,7 @@ else
     greatest=$TESTURL3
 fi
 
-if [[ "$TITLE" -eq 1 ]] || [[ "$BODY" -eq 1 ]]; then
+if [[ "$TITLE" -eq 1 ]] || [[ "$BODY" -eq 1 ]] || [[ "$CODE" -eq 1 ]]  ; then
     while IFS= read -r DATALINE; do
         TITLESTR="${DATALINE%%>*}"
         DATALINE="${DATALINE#*>}"
@@ -391,6 +447,5 @@ fi
 
 
 
-#rm -rf TEMP_URLS.txt
 echo "--- PROGRAM END ---"
 exit 0
