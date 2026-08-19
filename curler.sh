@@ -1,34 +1,30 @@
 #SCRIPT FOR FINDING HTML PAGES
 #MY CODE NO STEALING - FISCHEEY
-MODESET=0
-DICTIONARY=0
-NESTED=0
+
+
 URLSET=0 
-COUNTER=0
-RAW=0
-PARALLEL=0
 CODE=0
-SUFFIX=0
 ANALYSISSET=0
 TITLE=0
 BODY=0
+PARALLEL_VAL=1
+DICTIONARY_VAL=""
+RAW_VAL=""
+NESTED_VAL=""
+SUFFIX_VAL=""
 
-touch out.txt
-: > out.txt
-touch TEMP_URLS.txt
-: > TEMP_URLS.txt
-touch CURLOUT_TEMP.txt
-: > CURLOUT_TEMP.txt
-touch SUFFIX_TEMP.txt
-: > SUFFIX_TEMP.txt
-touch S_TEMP.txt
-: > S_TEMP.txt
+
+touch out.txt; : > out.txt
+touch TEMP_URLS.txt; : > TEMP_URLS.txt
+touch CURLOUT_TEMP.txt; : > CURLOUT_TEMP.txt
+touch SUFFIX_TEMP.txt; : > SUFFIX_TEMP.txt
+touch S_TEMP.txt; : > S_TEMP.txt
 
 cleanup() {
     echo "🧹 Executing cleanup operations..."
     
     # Remove temporary directories safely
-    if [[ -n "$BACKGROUND_PID" ]]; then
+    if [ -n "$BACKGROUND_PID" ]; then
         kill "$BACKGROUND_PID" 2>/dev/null
     fi
     kill $(jobs -p) 2>/dev/null
@@ -38,97 +34,40 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-
-
-
-
-if [ "$#" -eq 1 ]; then 
-        echo "You must enter a url, dictionary location, and depth level in the format ./script.sh https://www.example.com /path/to/dictionary  1"
-        exit 1
-fi
-for arg in "$@"; do
-    if [[ "$arg" == "help" ]]; then
-        echo "help menu"
-
-    #
-    # INPUT MODES
-    #    
-    elif [[ "$arg" == "-D" ]] && [[ "$MODESET" == 0 ]]; then
-        
-        DICTIONARY=$COUNTER
-        MODESET=1
-    elif [[ "$arg" == "-D" ]] && [[ "$MODESET" == 1 ]]; then
-        echo " - ERROR - MUST SELECT EITHER RAW MODE OR DICTIONARY MODE - PROGRAM EXIT"
-        exit 1
-    elif [[ "$arg" == "-R" ]]  && [[ "$MODESET" == 0 ]]; then
-        RAW=$COUNTER
-        MODESET=1
-    elif [[ "$arg" == "-R" ]]  && [[ "$MODESET" == 1 ]]; then
-        echo " - ERROR - MUST SELECT EITHER RAW MODE OR DICTIONARY MODE - PROGRAM EXIT"
-        exit 1
-
-    
-    elif [[ "$arg" == "-N" ]]; then
-        NESTED=$COUNTER
-    elif [[ "$arg" == *"https://"* ]] || [[ $arg == *"http://"* ]]; then
-        URLSET=1
-        URL=$arg
-    elif [[ "$arg" == "-P" ]]; then 
-        PARALLEL=$COUNTER
-    
-
-    #F$
-    #ANALYSIS MODE
-    #
-    elif [[ ("$arg" == "-T" || "$arg" == "-B" || "$arg" == "-W" ) && "$ANALYSISSET" == 1 ]]; then 
-        echo "ERROR - can only enter one analysis mode"
-        exit 1
-    elif [[ "$arg" == "-T" ]] && [[ "$ANALYSISSET" == 0 ]]; then 
-        TITLE=1
-        ANALYSISSET=1
-    elif [[ "$arg" == "-B" ]] && [[ "$ANALYSISSET" == 0 ]]; then 
-        ANALYSISSET=1
-        BODY=1
-    elif [[ "$arg" == "-W" ]] && [[ "$ANALYSISSET" == 0 ]]; then 
-        ANALYSISSET=1
-        WORD=1
-    elif [[ "$arg" == "-C" ]] && [[ "$ANALYSISSET" == 0 ]]; then 
-        ANALYSISSET=1
-        CODE=1
-    elif [[ "$arg" == "-S" ]]; then 
-        SUFFIX=$COUNTER
-        TITLE=1
-    fi
-    ((COUNTER++))
-    
-done 
-
-PARALLEL_VAL=1
-DICTIONARY_VAL=1
-RAW_VAL=1
-NESTED_VAL=1
-SUFFIX_VAL=1
-
-if [[ "$PARALLEL" -gt 0 ]]; then
-    TEMP=$((2 + "$PARALLEL"))
-    PARALLEL_VAL=${!TEMP}
-fi 
-if [[ "$DICTIONARY" -gt 0 ]]; then
-    TEMP=$((2 + "$DICTIONARY"))
-    DICTIONARY_VAL=${!TEMP}
-fi
-if [[ "$RAW" -gt 0 ]]; then
-    TEMP=$((2 + "$RAW"))
-    RAW_VAL=${!TEMP}
-fi
-if [[ "$NESTED" -gt 0 ]]; then
-    TEMP=$((2 + "$NESTED"))
-    NESTED_VAL=${!TEMP}
-fi
-if [[ "$SUFFIX" -gt 0 ]]; then
-    TEMP=$((2 + "$SUFFIX"))
-    SUFFIX_VAL=${!TEMP}
-fi
+#show usage details
+usage() {
+    echo "Usage: $0 [-P int ] [-S string] [-D filename] [-B] [-C]"
+    echo "  -P thread count    [INTEGER]"
+    echo "  -S suffix mode     [FILENAME OR STRING] "
+    echo "  -D dictionary mode [FILENAME]            "
+    echo "  -N nested mode     [FILENAME]"
+    echo "  -R raw mode        [RAW VALUE]          "
+    echo "  -B body mode            "
+    echo "  -C code mode            " 
+    echo "  -T title mode            "
+    echo "  -W word mode            "       
+    exit 1
+}
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -S) SUFFIX_VAL="$2"; shift 2 ;;
+        -P) PARALLEL_VAL="$2"; shift 2 ;;
+        -N) NESTED_VAL="$2"; shift 2 ;;
+        -D) DICTIONARY_VAL="$2"; shift 2 ;;
+        -R) RAW_VAL="$2"; shift 2 ;;
+        -C) CODE=1; shift ;;
+        -B) BODY=1; shift ;;
+        -T) TITLE=1; shift ;;
+        -W) WORD=1; shift ;;
+        http://*|https://*)
+            if [[ "$URLSET" != 1 ]]; then
+                URL="$1"
+                URLSET=1
+            fi
+            shift ;;
+        *) echo "Error: Invalid argument $1" >&2 ; shift ;;
+    esac
+done
 
 
 
@@ -138,27 +77,18 @@ fi
 
 
 
+#symbols
+RED=$(printf '\033[31m')
+GREEN=$(printf '\033[32m')
+RESET=$(printf '\033[0m')
 
-
-
-
-
-
-
-
-
-RED='\e[31m'
-GREEN='\e[32m'
-RESET='\e[0m'
-
-
-TICK="\u2714" # ✔
-CROSS="\u2718" # ✘
+TICK="✔"
+CROSS="✘"
 
 
 
 printf "\n\n--- PROGRAM SETUP ---\n"
-if [[ "$URLSET" -ne 0 ]]; then
+if [ "$URLSET" != 0 ]; then
     echo -e " - URLSET - ${GREEN}${TICK}${RESET}  - $URL"
 else
     echo -e " - URLSET - ${RED}${CROSS}${RESET}"
@@ -167,10 +97,10 @@ else
 fi
 
 
-if [[ "$RAW" -ne 0 ]]; then
+if [ "$RAW_VAL" != "" ]; then
     echo -e " - RAW MODE - ${GREEN}${TICK}${RESET}"
     echo -e " - DICTIONARY MODE - ${RED}${CROSS}${RESET}"
-elif [[ "$DICTIONARY" -ne 0 ]]; then
+elif [ "$DICTIONARY_VAL" != "" ]; then
     if [ ! -f "$DICTIONARY_VAL" ]; then
         echo "Error: Dictionary file not found at $DICTIONARY_VAL."
         echo "On Debian/Ubuntu, install it using: sudo apt install wamerican"
@@ -183,34 +113,34 @@ else
     exit 1
 fi
 
-if [[ "$NESTED" -ne 0 ]]; then
+if [ "$NESTED_VAL" != "" ]; then
     echo -e " - NESTED MODE - ${GREEN}${TICK}${RESET} - $NESTED_VAL"
 else 
     echo -e " - NESTED MODE - ${RED}${CROSS}${RESET}"
 fi
 
-if [[ "$PARALLEL" -ne 0 ]]; then
+if [ "$PARALLEL_VAL" != 1 ]; then
     echo -e " - PARALLEL MODE - ${GREEN}${TICK}${RESET}   - SETTING TO $PARALLEL_VAL"
 else 
     echo -e " - PARALLEL MODE - ${RED}${TICK}${RESET} - SETTING TO 1"
 fi
 
-if [[ "$TITLE" -ne 0 ]]; then
+if [ "$TITLE" != 0 ]; then
     echo -e " - TITLE MODE - ${GREEN}${TICK}${RESET}"
     echo -e " - BODY MODE - ${RED}${CROSS}${RESET}"
     echo -e " - WORD MODE - ${RED}${CROSS}${RESET}"
     echo -e " - CODE MODE - ${RED}${CROSS}${RESET}"
-elif [[ "$BODY" -ne 0 ]]; then
+elif [ "$BODY" != 0 ]; then
     echo -e " - TITLE MODE - ${RED}${CROSS}${RESET}"
     echo -e " - BODY MODE - ${GREEN}${TICK}${RESET}"
     echo -e " - WORD MODE - ${RED}${CROSS}${RESET}"
     echo -e " - CODE MODE - ${RED}${CROSS}${RESET}"
-elif [[ "$WORD" -ne 0 ]]; then
+elif [ "$WORD" != 0 ]; then
     echo -e " - TITLE MODE - ${RED}${CROSS}${RESET}"
     echo -e " - BODY MODE - ${RED}${CROSS}${RESET}"
     echo -e " - WORD MODE - ${GREEN}${TICK}${RESET}"
     echo -e " - CODE MODE - ${RED}${CROSS}${RESET}"
-elif [[ "$CODE" -ne 0 ]]; then
+elif [ "$CODE" != 0 ]; then
     echo -e " - TITLE MODE - ${RED}${CROSS}${RESET}"
     echo -e " - BODY MODE - ${RED}${CROSS}${RESET}"
     echo -e " - WORD MODE - ${RED}${CROSS}${RESET}"
@@ -220,9 +150,9 @@ else
     exit 1
 fi
 
-if [[ "$SUFFIX" -ne 0 ]]; then
+if [ "$SUFFIX_VAL" != "" ]; then
     echo -e " - SUFFIX MODE - ${GREEN}${TICK}${RESET} - $SUFFIX_VAL"
-    if [[ -f "$SUFFIX_VAL" ]]; then
+    if [ -f "$SUFFIX_VAL" ]; then
         cp -n "$SUFFIX_VAL" SUFFIX_TEMP.txt
     else
         echo "$SUFFIX_VAL" >> SUFFIX_TEMP.txt
@@ -242,33 +172,25 @@ echo "--- PROGRAM RUN ---"
 
 
 
-
-
-
-
-
-echo $WORD
-
-
-if [[ "$TITLE" -eq 1 ]]; then
+if [ "$TITLE" == 1 ]; then
     TESTURL1=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | grep -iPo '(?<=<title>).*?(?=</title>)')
     TESTURL2=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | grep -iPo '(?<=<title>).*?(?=</title>)')
     TESTURL3=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | grep -iPo '(?<=<title>).*?(?=</title>)')
-elif [[ "$BODY" -eq 1 ]]; then
+elif [ "$BODY" == 1 ]; then
     TESTURL1=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' -e 's/[[:space:]]//g' | tr -d '\n\r')
     TESTURL2=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' -e 's/[[:space:]]//g' | tr -d '\n\r')
     TESTURL3=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' -e 's/[[:space:]]//g' | tr -d '\n\r')
-elif [[ "$WORD" -eq 1 ]]; then
+elif [ "$WORD" == 1 ]; then
     TESTURL1=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' | tr -d '\n\r')
     TESTURL2=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' | tr -d '\n\r')
     TESTURL3=$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s "$URL/$(tr -dc 'a-z0-9' < /dev/urandom | head -c 24)"  | sed -e '/<style[^>]*>/,/<\/style>/d' -e 's/<[^>]*>//g' -e 's/{[^}]*}//g' | tr -d '\n\r') 
 
 #TODO check if curl output is empty (can still be valid)
-elif [[ "$CODE" -ne 1 ]]; then
+elif [ "$CODE" != 1 ]; then
     echo "ERROR 112"
     exit 1
 fi
-if [[ "$TITLE" -eq 1 ]] || [[ "$BODY" -eq 1 ]] || [[ "$WORD" -eq 1 ]]; then
+if [ "$TITLE" == 1 ] || [ "$BODY" == 1 ] || [ "$WORD" == 1 ]; then
     if [ "${#TESTURL1}" -le "${#TESTURL2}" ] && [ "${#TESTURL1}" -le "${#TESTURL3}" ]; then
         smallest=$TESTURL1
     elif [ "${#TESTURL2}" -le "${#TESTURL1}" ] && [ "${#TESTURL2}" -le "${#TESTURL3}" ]; then
@@ -280,26 +202,25 @@ if [[ "$TITLE" -eq 1 ]] || [[ "$BODY" -eq 1 ]] || [[ "$WORD" -eq 1 ]]; then
     TESTURL1AVE=0
     TESTURL2AVE=0
     TESTURL3AVE=0
-
-    for (( i=0; i<${#smallest}; i++ )); do
+    i=0
+while [ "$i" -lt ${#smallest} ]; do
         URL1char="${TESTURL1:$i:1}"
         URL2char="${TESTURL2:$i:1}"
         URL3char="${TESTURL3:$i:1}"
-
-        if [[ "$URL1char" = "$URL2char" ]] && [[ "$URL2char" = "$URL3char" ]]; then
-        
-            ((TESTURL1AVE++))
-            ((TESTURL2AVE++))
-            ((TESTURL3AVE++))
-        elif [[ "$URL1char" = "$URL2char" ]] ; then
-            ((TESTURL1AVE++))
-            ((TESTURL2AVE++))
-        elif [[ "$URL1char" = "$URL2char" ]] ; then
-            ((TESTURL2AVE++))
-            ((TESTURL3AVE++))
+        if [ "$URL1char" = "$URL2char" ] && [ "$URL2char" = "$URL3char" ]; then
+            TESTURL1AVE=$((TESTURL1AVE + 1))
+            TESTURL2AVE=$((TESTURL2AVE + 1))
+            TESTURL2AVE=$((TESTURL2AVE + 1))
+        elif [ "$URL1char" = "$URL2char" ] ; then
+            TESTURL1AVE=$((TESTURL1AVE + 1))
+            TESTURL2AVE=$((TESTURL2AVE + 1))
+        elif [ "$URL2char" = "$URL3char" ] ; then
+            TESTURL2AVE=$((TESTURL2AVE + 1))
+            TESTURL3AVE=$((TESTURL3AVE + 1))
         fi
+        i=$((i + 1))
     done
-    if [[ "${#smallest}" -ne 0 ]]; then
+    if [ "${#smallest}" != 0 ]; then
         ((TESTURL1AVE /= "${#smallest}"))
         ((TESTURL2AVE /= "${#smallest}"))
         ((TESTURL3AVE /= "${#smallest}"))
@@ -327,13 +248,6 @@ fi
 
 
 
-
-
-
-
-
-
-
 TIMER(){
     SECONDS=0
     urlcount=$(wc -l < "TEMP_URLS.txt")
@@ -347,27 +261,6 @@ TIMER(){
 }
 
 TIMER &
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -409,17 +302,17 @@ export -f CURLER_DICTNEST_FILL
 export -f CURLER_NESTED_FILL
 export -f CURLER_SUFFIX_FILL
 
-if [[ "$NESTED" -gt 0 ]]; then
-    cat $NESTED_VAL | sed 's/[^a-z:./]//g' | xargs -P $PARALLEL_VAL -I {} bash -c 'CURLER_NESTED_FILL "$1" "$2"' _  {} "$URL"
+if [ "$NESTED_VAL" != "" ]; then
+    cat $NESTED_VAL | sed 's/[^a-zA-Z0-9:./_-]//g' | xargs -P $PARALLEL_VAL -I {} bash -c 'CURLER_NESTED_FILL "$1" "$2"' _  {} "$URL"
 fi
-if [[ "$DICTIONARY" -gt 0 ]]; then
-    if [[ "$NESTED" -gt 0 ]]; then
-        cat NESTED_TEMP.txt | sed 's/[^a-z:./]//g' | xargs -P $PARALLEL_VAL -I {} bash -c 'CURLER_DICTNEST_FILL "$1" ' _  {} 
+if [ "$DICTIONARY_VAL" != "" ]; then
+    if [ "$NESTED_VAL" != "" ]; then
+        cat NESTED_TEMP.txt | sed 's/[^a-zA-Z0-9:./_-]//g' | xargs -P $PARALLEL_VAL -I {} bash -c 'CURLER_DICTNEST_FILL "$1" ' _  {} 
     else
-        cat $DICTIONARY_VAL | sed 's/[^a-z:./]//g' | xargs -P $PARALLEL_VAL -I {} bash -c 'CURLER_DICT_FILL "$1" "$2"' _  {} "$URL"
+        cat $DICTIONARY_VAL | sed 's/[^a-zA-Z0-9:./_-]//g' | xargs -P $PARALLEL_VAL -I {} bash -c 'CURLER_DICT_FILL "$1" "$2"' _  {} "$URL"
     fi
 
-elif [[ "$RAW" -gt 0 ]]; then
+elif [ "$RAW_VAL" != "" ]; then
  # Set your max length here
 awk -v max="$RAW_VAL" -v URL="$URL/" '
 BEGIN {
@@ -434,10 +327,10 @@ function gen(p, n,   j) {
 }
 ' >> TEMP_URLS.txt
 fi
-if [[ "$SUFFIX" -gt 0 ]]; then
+if [ "$SUFFIX_VAL" != "" ]; then
     mv TEMP_URLS.txt S_TEMP.txt
     : > TEMP_URLS.txt
-    cat S_TEMP.txt | sed 's/[^a-z:./]//g' | xargs -P $PARALLEL_VAL -I {} bash -c 'CURLER_SUFFIX_FILL "$1" ' _  {}
+    cat S_TEMP.txt | sed 's/[^a-zA-Z0-9:./_-]//g' | xargs -P $PARALLEL_VAL -I {} bash -c 'CURLER_SUFFIX_FILL "$1" ' _  {}
 fi
 
 
@@ -451,7 +344,7 @@ fi
 
 curler_CURLS_T()
 {
-    printf "%s\x1f%s\n" "$1" "$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 50000 -s  "${1}" | grep -iPo '(?<=<title>).*?(?=</title>)')" >> CURLOUT_TEMP.txt
+    printf "%s\x1f%s\n" "$1" "$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -s  "${1}" | grep -iPo '(?<=<title>).*?(?=</title>)')" >> CURLOUT_TEMP.txt
 }
 curler_CURLS_B()
 {
@@ -464,20 +357,23 @@ curler_CURLS_W()
 }
 curler_CURLS_C()
 {
-    printf "%s\x1f%s\n" "$1" "$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -sI -o /dev/null -w "%{http_code}" "${1}" )" >> CURLOUT_TEMP.txt
+    RESPCODE=$("$(curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --max-filesize 5000 -sI -o /dev/null -w "%{http_code}" "${2}/${1}" )") 
+    if [ "$RESPCODE" != "404" ]; then
+        echo "$2/$1 : RESPONSE : $CODE" >> out.txt
+    fi 
 }
 export -f curler_CURLS_T
 export -f curler_CURLS_B
 export -f curler_CURLS_W
 export -f curler_CURLS_C
 
-if [[ "$TITLE" -eq 1 ]]; then
+if [ "$TITLE" == 1 ]; then
     cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_CURLS_T "$1" ' _   "{}"
-elif [[ "$BODY" -eq 1 ]]; then
+elif [ "$BODY" == 1 ]; then
     cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_CURLS_B "$1" ' _   "{}"
-elif [[ "$WORD" -eq 1 ]]; then
+elif [ "$WORD" == 1 ]; then
     cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_CURLS_W "$1" ' _   "{}"
-elif [[ "$CODE" -eq 1 ]]; then
+elif [ "$CODE" == 1 ]; then
     cat TEMP_URLS.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_CURLS_C "$1" ' _   "{}"
 else
     echo "ERROR 111"
@@ -495,34 +391,27 @@ curler_ANALYSIS_TB()
     TITLESTR="${1%%$'\x1f'*}"
     DATALINE="${1#*$'\x1f'}"
     DATAAVE=0
-    for (( i=0; i<${#3}; i++ )); do
+    i=0
+    while [ "$i" -lt ${#3} ]; do
         KEYCHAR="${2:$i:1}"
         TESTCHAR="${DATALINE:$i:1}"
-        if [[ "$TESTCHAR" != "$KEYCHAR" ]]; then
+        if [ "$TESTCHAR" != "$KEYCHAR" ]; then
             ((DATAAVE++))
         fi
-
+        i=$((i + 1))
     done
     LENGTH="${#3}"
     if [ "$LENGTH" -gt 0 ]; then
         DATAAVE=$(awk -v sum="$DATAAVE" -v len="$LENGTH" \
             'BEGIN { printf "%.2f\n", sum / len }')
     else
-        echo "LENGTH is zero"
+        if [ ${#DATALINE} -gt 0 ]; then
+            DATAAVE=1
+        fi
     fi
     if awk "BEGIN {exit !($DATAAVE > 0.5)}"; then
         echo "$TITLESTR : UNIQUE VALUE : $DATAAVE" >> out.txt
     fi
-}
-curler_ANALYSIS_C()
-{
-    
-    TITLESTR="${1%%$'\x1f'*}"
-    CODELINE="${1#*$'\x1f'}"
-    if [ "$CODELINE" -ne 404 ]; then
-        echo "$TITLESTR : UNIQUE VALUE : $CODELINE" >> out.txt
-    fi
-       
 }
 curler_ANALYSIS_W()
 {
@@ -540,7 +429,7 @@ curler_ANALYSIS_W()
     DATAAVE=0
     TOTAL=0
     for key in "${!DATA_MAP[@]}"; do
-        if  [[ -v "KEY_MAP["$key"]" ]]; then
+        if  [ -v "KEY_MAP["$key"]" ]; then
             d_count="${DATA_MAP["$key"]}"
             k_count="${KEY_MAP["$key"]}"
 
@@ -576,20 +465,18 @@ curler_ANALYSIS_W()
 
 
 export -f curler_ANALYSIS_TB
-export -f curler_ANALYSIS_C
+
 export -f curler_ANALYSIS_W
 
  
-if [[ "$TITLE" -eq 1 ]] || [[ "$BODY" -eq 1 ]]  ; then
+if [ "$TITLE" == 1 ] || [ "$BODY" == 1 ]  ; then
     cat CURLOUT_TEMP.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_ANALYSIS_TB "$1" "$2" "$3"' _  {} "$greatest" "$smallest"
-elif [[ "$CODE" -eq 1 ]]; then
-    cat CURLOUT_TEMP.txt | xargs -P $PARALLEL_VAL -I {} bash -c 'curler_ANALYSIS_C "$1"' _  {} 
-elif [[ "$WORD" -eq 1 ]]; then
+elif [ "$WORD" == 1 ]; then
     #build key map
     declare -A KEY_MAP
-    KEY_MAP=()
+   
     for word in $greatest; do
-        if  [[ -v KEY_MAP["$word"] ]]; then
+        if  [ -v KEY_MAP["$word"] ]; then
             ((KEY_MAP[$word]++))
         else
             KEY_MAP[$word]=1
@@ -602,17 +489,6 @@ else
     echo "ERROR 114" 
     exit 1
 fi
-
-
-
-
-
-
-
-
-
-
-
 
 
 

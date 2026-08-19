@@ -1,0 +1,88 @@
+# 🚀 CURLER
+
+[![License: MIT](https://shields.io)](https://opensource.org)
+[![Build Status](https://shields.io)]()
+
+
+Curler is a lightweight script designed to act similar to dirbuster and gobuster but slower and simpler with some added functionality 
+### Files
+
+there are two different versions, curler and curler_simple, curler simple has less funcitonality but runs a tiny bit faster
+### 🛠️ Built With
+* shell scripting
+
+---
+
+
+## 🏁 Getting Started
+
+Follow these steps to set up the project locally for development and testing.
+
+### Prerequisites
+* Hopefully none ??
+
+### Installation
+1. download the file or clone the repository
+
+2. add permissions
+
+3. run
+
+---
+
+## 💡 Usage
+
+./curler.sh [url] [arguments]
+
+#   Usage: $0 [-P int ] [-S string] [-D filename] [-B] [-C]"
+#      -P parallel mode   [INTEGER]
+#      -S suffix mode     [FILENAME OR STRING]
+#      -D dictionary mode [FILENAME]
+#      -N nested mode     [FILENAME]
+#      -R raw mode        [RAW VALUE]
+#      -B body mode
+#      -C code mode
+#      -T title mode
+#      -W word mode
+
+
+# parallel mode (recommended)
+runs several operations in parallel threads, amount to be set by the user, if not set defaults to 1
+
+# suffix mode
+adds file suffixes to every url ran, can be a single suffix entered as string or multiple from a file
+
+# dictionary mode (recommended )
+gets the urls to be searched from entered file
+
+# raw mode
+generates all a-Z 0-9 combinations up to x digits determined by the user (do not enter values higher then 4 or 5 as it can take millions of years)
+
+# body mode
+runs analysis based on all body text similarity up to 5000 characters
+
+# code mode (recommended)
+returns positive to out if code is not 404 (same method as gobuster and dirbuster)
+
+# title mode
+runs analysis based on title text similarity up to 5000 characters
+
+# word mode 
+runs analysis based on word frequency similarity up to 5000 characters
+---
+
+## 🧪 Running Tests
+
+Explain how to execute the built-in automated test suite:
+
+```bash
+npm run test
+```
+
+---
+
+
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
